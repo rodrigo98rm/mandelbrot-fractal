@@ -23,6 +23,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 
 package mandelbrot;
+
 import java.awt.Canvas;
 import java.awt.Frame;
 import java.awt.Graphics;
@@ -50,7 +51,7 @@ public class Mandelbrot extends Canvas {
     // size of fractal in pixels (HEIGHT X HEIGHT)
     private static final int HEIGHT = 1024;
     // how long to test for orbit divergence
-    private static final int NUM_ITERATIONS = 50;
+    private static int NUM_ITERATIONS = 50;
 
     private int colorscheme[];
 
@@ -61,38 +62,40 @@ public class Mandelbrot extends Canvas {
     private Image img;
     private String msg;
 
+    private static double posX = 0, posY = 0;
+    private static double factor = 4.0;
+
     /**
      * Construct a new Mandelbrot canvas.
      * The constructor will calculate the fractal (either sequentially
      * or in parallel), then store the result in an {@link java.awt.Image}
      * for faster drawing in its {@link #paint(Graphics)} method.
      *
-     * @param height the size of the fractal (height x height pixels).
+     * @param height      the size of the fractal (height x height pixels).
      * @param optParallel if true, render in parallel
      * @param optDrawGrid if true, render the grid of leaf task pixel areas
      */
-    public Mandelbrot(int height)
-    {
-        this.colorscheme = new int[NUM_ITERATIONS+1];
+    public Mandelbrot(int height) {
+        this.colorscheme = new int[NUM_ITERATIONS + 1];
         // fill array with color palette going from Red over Green to Blue
         int scale = (255 * 2) / NUM_ITERATIONS;
 
         // going from Red to Green
-        for (int i = 0; i < (NUM_ITERATIONS/2); i++)
+        for (int i = 0; i < (NUM_ITERATIONS / 2); i++)
             //               Alpha=255  | Red                   | Green       | Blue=0
-            colorscheme[i] = 0xFF << 24 | (255 - i*scale) << 16 | i*scale << 8;
+            colorscheme[i] = 0xFF << 24 | (255 - i * scale) << 16 | i * scale << 8;
 
         // going from Green to Blue
-        for (int i = 0; i < (NUM_ITERATIONS/2); i++)
+        for (int i = 0; i < (NUM_ITERATIONS / 2); i++)
             //                         Alpha=255 | Red=0 | Green              | Blue
-            colorscheme[i+NUM_ITERATIONS/2] = 0xFF000000 | (255-i*scale) << 8 | i*scale;
+            colorscheme[i + NUM_ITERATIONS / 2] = 0xFF000000 | (255 - i * scale) << 8 | i * scale;
 
         // convergence color
         colorscheme[NUM_ITERATIONS] = 0xFF0000FF; // Blue
 
         this.height = height;
         // fractal[x][y] = fractal[x + height*y]
-        this.fractal = new int[height*height];
+        this.fractal = new int[height * height];
 
         long start = System.currentTimeMillis();
 
@@ -106,38 +109,35 @@ public class Mandelbrot extends Canvas {
 
     /**
      * Draws part of the mandelbrot fractal.
-     *
+     * <p>
      * This method calculates the colors of pixels in the square:
-     *
+     * <p>
      * (srcx, srcy)           (srcx+size, srcy)
-     *      +--------------------------+
-     *      |                          |
-     *      |                          |
-     *      |                          |
-     *      +--------------------------+
+     * +--------------------------+
+     * |                          |
+     * |                          |
+     * |                          |
+     * +--------------------------+
      * (srcx, srcy+size)      (srcx+size, srcy + size)
      */
-    private void calcMandelBrot(int srcx, int srcy, int size, int height)
-    {
+    private void calcMandelBrot(int srcx, int srcy, int size, int height) {
         double x, y, t, cx, cy;
         int k;
 
         // loop over specified rectangle grid
-        for (int px = srcx; px < srcx + size; px++)
-        {
-            for (int py = srcy; py < srcy + size; py++)
-            {
-                x=0; y=0;
+        for (int px = srcx; px < srcx + size; px++) {
+            for (int py = srcy; py < srcy + size; py++) {
+                x = 0;
+                y = 0;
                 // convert pixels into complex coordinates between (-2, 2)
-                cx = (px * 4.0) / height - 2;
-                cy = 2 - (py * 4.0) / height;
+                cx = (px * factor) / height - 2 + posX;
+                cy = posY + 2 -  (py * factor) / height;
                 // test for divergence
-                for (k = 0; k < NUM_ITERATIONS; k++)
-                {
-                    t = x*x-y*y+cx;
-                    y = 2*x*y+cy;
+                for (k = 0; k < NUM_ITERATIONS; k++) {
+                    t = x * x - y * y + cx;
+                    y = 2 * x * y + cy;
                     x = t;
-                    if (x*x+y*y > 4) break;
+                    if (x * x + y * y > 4) break;
                 }
                 fractal[px + height * py] = colorscheme[k];
             }
@@ -154,7 +154,7 @@ public class Mandelbrot extends Canvas {
                 data,
                 0,
                 data.length,
-                getWidth() - (data.length)*8,
+                getWidth() - (data.length) * 8,
                 getHeight() - 20);
     }
 
@@ -173,19 +173,47 @@ public class Mandelbrot extends Canvas {
         return image;
     }
 
-    public static void main(String args[])
-    {
+    public static void main(String args[]) {
         Frame f = new Frame();
         Mandelbrot canvas = new Mandelbrot(HEIGHT);
         f.setSize(HEIGHT, HEIGHT);
         f.add(canvas);
-        f.addWindowListener(new WindowAdapter()
-        {
-            public void windowClosing(WindowEvent e)
-            {
+        f.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
                 System.exit(0);
             }
         });
         f.setVisible(true);
+
+        boolean run = true;
+
+        while(run) {
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            posX -= .1;
+            posY += .1;
+            factor -= 0.2;
+            NUM_ITERATIONS += 10;
+
+            Mandelbrot newCanvas = new Mandelbrot(HEIGHT);
+            f.add(newCanvas);
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            f.remove(canvas);
+            canvas = newCanvas;
+            f.setVisible(true);
+
+            if(posX == 2) {
+                run = false;
+            }
+        }
     }
 }
