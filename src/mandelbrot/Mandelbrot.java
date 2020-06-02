@@ -38,6 +38,7 @@ import java.awt.image.DirectColorModel;
 import java.awt.image.Raster;
 import java.awt.image.SampleModel;
 import java.awt.image.WritableRaster;
+import java.util.Scanner;
 
 /**
  * Demo of using Fork/Join parallelism to speed up the rendering of the
@@ -64,6 +65,8 @@ public class Mandelbrot extends Canvas {
 
     private static double posX = 0, posY = 0;
     private static double factor = 4.0;
+
+    private static Scanner scanner = new Scanner(System.in);
 
     /**
      * Construct a new Mandelbrot canvas.
@@ -130,8 +133,9 @@ public class Mandelbrot extends Canvas {
                 x = 0;
                 y = 0;
                 // convert pixels into complex coordinates between (-2, 2)
-                cx = (px * factor) / height - 2 + posX;
-                cy = posY + 2 -  (py * factor) / height;
+                cx = (px * factor) / height - (2 * factor / 4.0) + posX;
+//                cx = (px * factor) / height - 2;
+                cy = posY + (2 * factor / 4.0) - (py * factor) / height;
                 // test for divergence
                 for (k = 0; k < NUM_ITERATIONS; k++) {
                     t = x * x - y * y + cx;
@@ -187,18 +191,17 @@ public class Mandelbrot extends Canvas {
 
         boolean run = true;
 
-        while(run) {
+        while (run) {
+            System.out.println("Selecione a posição para centralizar no eixo X: (Double)");
+            posX = scanner.nextDouble();
 
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            System.out.println("Selecione a posição para centralizar no eixo Y: (Double)");
+            posY = scanner.nextDouble();
 
-            posX -= .1;
-            posY += .1;
-            factor -= 0.2;
-            NUM_ITERATIONS += 10;
+            System.out.println("Selecione o Zoom: (1 - 100% [inicial], 1.5 - 150%, 2 - 200%...)");
+            factor = 4.0 / scanner.nextDouble();
+            NUM_ITERATIONS = (int) (50 + 10 / factor);
+
 
             Mandelbrot newCanvas = new Mandelbrot(HEIGHT);
             f.add(newCanvas);
@@ -211,8 +214,13 @@ public class Mandelbrot extends Canvas {
             canvas = newCanvas;
             f.setVisible(true);
 
-            if(posX == 2) {
+            System.out.println("Continuar? (s/n)");
+            scanner.nextLine();
+            String answer = scanner.nextLine();
+
+            if (!answer.trim().equalsIgnoreCase("s")) {
                 run = false;
+                System.exit(0);
             }
         }
     }
