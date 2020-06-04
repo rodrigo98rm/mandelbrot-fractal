@@ -133,8 +133,13 @@ public class Mandelbrot extends Canvas {
                 x = 0;
                 y = 0;
                 // convert pixels into complex coordinates between (-2, 2)
+                /*
+                A modificação do intervalo de valores mostrados
+                na tela é possibilitada através do factor.
+                As variáveis posX e posY são responsáveis pela centralização
+                da janela de visualização.
+                */
                 cx = (px * factor) / height - (2 * factor / 4.0) + posX;
-//                cx = (px * factor) / height - 2;
                 cy = posY + (2 * factor / 4.0) - (py * factor) / height;
                 // test for divergence
                 for (k = 0; k < NUM_ITERATIONS; k++) {
@@ -191,6 +196,7 @@ public class Mandelbrot extends Canvas {
 
         boolean run = true;
 
+        // Início do loop que obtém os inputs do usuário
         while (run) {
             System.out.println("Selecione a posição para centralizar no eixo X: (Double)");
             posX = scanner.nextDouble();
@@ -199,21 +205,29 @@ public class Mandelbrot extends Canvas {
             posY = scanner.nextDouble();
 
             System.out.println("Selecione o Zoom: (1 - 100% [inicial], 1.5 - 150%, 2 - 200%...)");
+
+            /*
+            O fator inicial de 4 mostra o intervalo de -2 até 2 nos eixos X e Y
+            Ao diminuir este fator, um intervalo menor é apresentado, dando a sensação de zoom
+            Caso o usuário insira o nível 2, por exemplo, factor terá valor 2.0.
+            Assim, o intervalo de valores mostrados na tela será a metade.
+            Assumindo que as posições em X e Y selecionadas sejam (0,0), 
+            o intervalo de valores mostrados será de -1 até 1 em ambos os eixos
+            */
             factor = 4.0 / scanner.nextDouble();
+
+            // Aumenta o número de iterações para que o fractal fique mais detalhado conforme níveis maiores de zoom são aplicados.
             NUM_ITERATIONS = (int) (50 + 10 / factor);
 
-
+            // Cria um novo canvas, que contém o fractal com o zoom aplicado
+            // Renderiza o novo fractal e remove o anterior
             Mandelbrot newCanvas = new Mandelbrot(HEIGHT);
             f.add(newCanvas);
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             f.remove(canvas);
             canvas = newCanvas;
             f.setVisible(true);
 
+            // Verifica se o usuário deseja continuar com a execução do programa
             System.out.println("Continuar? (s/n)");
             scanner.nextLine();
             String answer = scanner.nextLine();
